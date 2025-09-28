@@ -1,42 +1,27 @@
-'use client'
+import HomeClient from "@/components/HomeClient";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useUser } from '@/lib/hooks/useUser'
-import { Tabs } from '@/components/ui/Tabs'
-import DocumentsView from '@/components/documents/DocumentsView'
-import SearchView from '@/components/search/SearchView'
+export const dynamic = "force-dynamic";
 
-export default function HomePage() {
-  const { userId, isLoading } = useUser()
-  const router = useRouter()
+export default async function Home() {
+  const sst = await import("sst");
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
+  const bucketName = sst.Resource["document-semantic-search-dev"].name;
 
-  const tabs = [
-    {
-      label: 'Documents',
-      value: 'documents',
-      content: <DocumentsView />
-    },
-    {
-      label: 'Semantic Search',
-      value: 'search',
-      content: <SearchView />
-    }
-  ]
+  const command = new PutObjectCommand({
+    Key: crypto.randomUUID(),
+    Bucket: bucketName,
+  });
 
-  return (
-    <div className="max-w-7xl mx-auto">
-      <div className="bg-white rounded-lg shadow-lg">
-        <Tabs tabs={tabs} defaultValue="documents" />
-      </div>
-    </div>
-  )
+  const signedUrl = await getSignedUrl(new S3Client({}), command);
+
+  return <HomeClient signedUrl={signedUrl} />;
 }
+
+// export const revalidate = 3600;
+
+// export default function Home() {
+//    return <HomeClient/>;
+
+// }
